@@ -13,16 +13,41 @@ import base64
 import datetime
 import pytz
 import io
-import uuid
+import uuid, os
 
 # Check if Firebase is already initialized
-if not firebase_admin._apps:
-    # Initialize Firebase only if not already initialized
-    cred = credentials.Certificate('admin_app/firebase/service-account.json')
-    firebase_admin.initialize_app(cred, {
-    'httpTimeout': 120  # 120 seconds timeout, you can increase as needed
-})
+# if not firebase_admin._apps:
+#     # Initialize Firebase only if not already initialized
+#     cred = credentials.Certificate('admin_app/firebase/service-account.json')
+#     firebase_admin.initialize_app(cred, {
+#     'httpTimeout': 120  # 120 seconds timeout, you can increase as needed
+# })
 
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Ensure Firebase is initialized only once
+if not firebase_admin._apps:
+    # Load Firebase credentials from the environment variables
+    cred = credentials.Certificate({
+        "type": os.getenv("FIREBASE_TYPE"),
+        "project_id": os.getenv("FIREBASE_PROJECT_ID"),
+        "private_key_id": os.getenv("FIREBASE_PRIVATE_KEY_ID"),
+        "private_key": os.getenv("FIREBASE_PRIVATE_KEY").replace(r'\n', '\n'),
+        "client_email": os.getenv("FIREBASE_CLIENT_EMAIL"),
+        "client_id": os.getenv("FIREBASE_CLIENT_ID"),
+        "auth_uri": os.getenv("FIREBASE_AUTH_URI"),
+        "token_uri": os.getenv("FIREBASE_TOKEN_URI"),
+        "auth_provider_x509_cert_url": os.getenv("FIREBASE_AUTH_PROVIDER_X509_CERT_URL"),
+        "client_x509_cert_url": os.getenv("FIREBASE_CLIENT_X509_CERT_URL"),
+        "universe_domain": os.getenv("FIREBASE_UNIVERSE_DOMAIN"),
+    })
+
+    # Initialize the Firebase app
+    firebase_admin.initialize_app(cred)
+    
 # Now you can use Firebase as usual
 db = firestore.client()
 
