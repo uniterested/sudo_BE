@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h4>Manage Users</h4>
+<form method="POST">
+    {% csrf_token %}
+    <div class="mb-3">
+        <button type="submit" class="btn btn-danger btn-sm" name="delete_selected">Delete Selected</button>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-bordered mt-3">
+            <thead class="table-dark">
+                <tr>
+                    <th>
+                        <input type="checkbox" id="select_all" onclick="toggleSelectAll()">
+                    </th>
+                    <th>User ID</th>
+                    <th>Email</th>
+                    <th>Mobile</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>
+                        <input type="checkbox" name="selected_users" value="{{ user.userId }}" class="user_checkbox">
+                    </td>
+                    <td>{{ user.userId }}</td>
+                    <td>{{ user.emailAddress }}</td>
+                    <td>{{ user.mobileNumber }}</td>
+                    <td>
+                        <form method="POST" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="user_id" value="{{ user.userId }}">
+                            <button type="submit" class="btn btn-danger btn-sm" name="delete_single">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</form>
+
+<script>
+    function toggleSelectAll() {
+        const selectAllCheckbox = document.getElementById("select_all");
+        const userCheckboxes = document.querySelectorAll(".user_checkbox");
+        userCheckboxes.forEach(checkbox => {
+            checkbox.checked = selectAllCheckbox.checked;
+        });
+    }
+</script>
+
+{% endblock %}

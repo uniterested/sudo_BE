@@ -1,0 +1,268 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Send Notification</title>
+  <link href="{% static 'assets/img/logo123.jpg' %}" rel="icon">
+  <link href="{% static 'assets/img/apple-touch-icon.png' %}" rel="apple-touch-icon">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Arial:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Vendor CSS Files -->
+  <link href="{% static 'assets/vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+  <link href="{% static 'assets/vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
+
+  <style>
+    /* Global Styles */
+    body {
+      font-family: 'Arial', sans-serif; /* Changed font */
+      margin: 0;
+      padding: 0;
+      background-color: #121212;
+      color: #fff;
+    }
+
+    /* Navbar Section */
+    header {
+      background-color: #1a1a1a;
+      padding: 20px 0;
+      text-align: center;
+    }
+
+    header .sitename {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #ff5722;
+    }
+
+    /* Hero Section */
+    .hero {
+      background: url("{% static 'assets/img/hero-image.jpg' %}") no-repeat center center;
+      background-size: cover;
+      padding: 50px 20px;
+      text-align: center;
+      color: #fff;
+    }
+
+    .hero h2 {
+      font-size: 1.8rem;
+    }
+
+    .hero p {
+      font-size: 1rem;
+    }
+
+    /* Card Section */
+    .card {
+      background-color: #333;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 30px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .card h3 {
+      font-size: 1.5rem;
+      margin-bottom: 15px;
+      color: #ff5722;
+    }
+
+    .card p {
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+    }
+
+    .message-option {
+      margin-top: 20px;
+    }
+
+    .message-option select {
+      width: 100%;
+      padding: 12px;
+      font-size: 1.1rem;
+      background-color: #333;
+      color: #fff;
+      border: 1px solid #ff5722;
+      border-radius: 5px;
+      outline: none;
+    }
+
+    .message-option button {
+      width: 100%;
+      background-color: #ff5722;
+      color: white;
+      padding: 12px;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-top: 15px;
+    }
+
+    .message-option button:hover {
+      background-color: #e64a19;
+    }
+
+    /* Toast Styles */
+    .toast-container {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1050;
+      display: flex;
+      justify-content: center;
+    }
+
+    .toast {
+      background-color: #333;
+      color: #fff;
+      border-radius: 5px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      margin-bottom: 10px;
+      padding: 10px 20px;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+      transform: translateY(100px);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast-header {
+      font-size: 1rem;
+      color: #ff5722;
+      font-weight: bold;
+    }
+
+    .toast-body {
+      font-size: 1rem;
+    }
+
+    /* Footer Section */
+    footer {
+      background-color: #1a1a1a;
+      color: #888;
+      text-align: center;
+      padding: 20px 0;
+      margin-top: 50px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .hero h2 {
+        font-size: 1.4rem;
+      }
+
+      .hero p {
+        font-size: 1rem;
+      }
+
+      .card {
+        padding: 15px;
+      }
+
+      .message-option select,
+      .message-option button {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Navbar Section -->
+  <header>
+    <div class="container">
+      <h1 class="sitename">Sudo</h1>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+ <!-- Hero Section -->
+<div class="hero">
+  <div class="container">
+    <h2>Hi, Send Notification to {{ user_data.firstname }}!</h2> <!-- Send notification to the user -->
+    <p>Choose a message to notify</p> <!-- Show the user's name -->
+  </div>
+</div>
+
+
+  <!-- Notification Form -->
+  <div class="container">
+    <div class="card">
+      <h3>Send Notification</h3>
+      <p style="color: white;">Select a message to notify:</p>
+
+      <form method="POST">
+        {% csrf_token %}
+        <div class="message-option">
+          <select name="message_key">
+            <option value="" disabled selected>Select a message</option>
+            {% for key, message in messages.items %}
+            <option value="{{ key }}">{{ message }}</option>
+            {% endfor %}
+          </select>
+
+          <button type="submit">Send Notification</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast-container">
+    <div id="successToast" class="toast">
+      <div class="toast-header">
+        Success
+      </div>
+      <div class="toast-body">
+        Notification sent successfully!
+      </div>
+    </div>
+
+    <div id="errorToast" class="toast">
+      <div class="toast-header">
+        Error
+      </div>
+      <div class="toast-body">
+        Something went wrong. Please try again.
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer Section -->
+  <footer>
+    <p>© 2025 Sudo. All Rights Reserved.</p>
+  </footer>
+
+  <!-- Vendor JS Files -->
+  <script src="{% static 'assets/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+
+  <script>
+    // Display toast based on result
+    {% if result %}
+    document.getElementById('successToast').classList.add('show');
+    setTimeout(function() {
+      document.getElementById('successToast').classList.remove('show');
+    }, 3000);
+    {% elif error %}
+    document.getElementById('errorToast').classList.add('show');
+    setTimeout(function() {
+      document.getElementById('errorToast').classList.remove('show');
+    }, 3000);
+    {% endif %}
+  </script>
+
+</body>
+
+</html>
