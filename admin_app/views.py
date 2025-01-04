@@ -86,7 +86,6 @@ def dashboard(request):
 
     return render(request, 'dashboard.html', context)
 
-
 def generate_qr(request):
     if not request.session.get('admin'):
         return redirect('login')
@@ -94,8 +93,10 @@ def generate_qr(request):
     if request.method == 'POST':
         count = int(request.POST.get('count'))
         qr_data = []
+        base_url = "https://sudo-be.onrender.com/send-notification/"
+        
         for _ in range(count):
-            # Generate a shorter user ID (UUID encoded in base64 for URL-safe characters)
+            # Generate a shorter user ID
             user_id = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8')[:8]  # Only first 8 characters
             user_data = {
                 'createdAt': datetime.datetime.now(),
@@ -113,14 +114,16 @@ def generate_qr(request):
             }
             db.collection('users').document(user_id).set(user_data)
 
-            # Generate QR code for the shortened user ID
-            qr_code = qrcode.make(user_id)
+            # Generate QR code with the dynamic URL
+            dynamic_url = f"{base_url}{user_id}"
+            qr_code = qrcode.make(dynamic_url)
 
             # Convert QR code to base64
             buffer = BytesIO()
             qr_code.save(buffer, format="PNG")
             buffer.seek(0)
             qr_code_base64 = base64.b64encode(buffer.read()).decode('utf-8')
+
             qr_data.append({'userId': user_id, 'qr_code_base64': qr_code_base64})
 
         request.session['qr_data'] = [
@@ -130,6 +133,7 @@ def generate_qr(request):
         return render(request, 'generate_qr.html', {'qr_data': qr_data})
 
     return render(request, 'generate_qr.html')
+
 
 
 def download_qr_pdf(request):
@@ -144,78 +148,72 @@ def download_qr_pdf(request):
     doc = SimpleDocTemplate(buffer, pagesize=letter)
     elements = []
 
-    # Set up some sample styles for Paragraphs
+    # Title and date styles
     styles = getSampleStyleSheet()
-    
-    # Custom styles for Paragraphs
     title_style = ParagraphStyle(name="Title", fontSize=24, alignment=1, fontName="Helvetica-Bold", spaceAfter=12, textColor=colors.black)
-    
-    # Adjusted date-time style with smaller font size and light color
-    date_style = ParagraphStyle(name="Date", fontSize=12, alignment=1, fontName="Helvetica", 
-                            spaceBefore=18, spaceAfter=24, textColor=colors.darkgrey)
+    date_style = ParagraphStyle(name="Date", fontSize=12, alignment=1, fontName="Helvetica", spaceBefore=18, spaceAfter=24, textColor=colors.darkgrey)
 
-    body_style = ParagraphStyle(name="Body", fontSize=14, alignment=0, fontName="Helvetica", spaceAfter=12)
-
-    # Title at the top
+    # Title and date
     title = Paragraph("Generated QR Codes", title_style)
     elements.append(title)
-
-    # Date, Day, and Time in IST (Indian Standard Time) with smaller font size
     ist = pytz.timezone('Asia/Kolkata')
     current_datetime = datetime.datetime.now(ist)
-    date_time_string = current_datetime.strftime("%A, %B %d, %Y - %I:%M %p")  # Format the date and time
+    date_time_string = current_datetime.strftime("%A, %B %d, %Y - %I:%M %p")
     date_time_paragraph = Paragraph(f"Created on: {date_time_string}", date_style)
-
-    # Add the date-time paragraph with some indentation
     elements.append(date_time_paragraph)
-    
-    elements.append(Spacer(1, 18))  # Larger space after the title and date-time
+    elements.append(Spacer(1, 18))
 
-    # Create the table structure for QR codes
+    # Generate QR codes with dynamic URLs
+    base_url = "https://sudo-be.onrender.com/send-notification/"
     data = []
-    for qr in qr_data:
-        # Add User ID (just plain text) and QR code to the table
-        user_id = f"<b>{qr['userId']}</b>"
-        
-        # Generate the QR code image
-        qr_code = qrcode.make(qr['userId'])
-        
-        # Convert the QR code to base64 and make it compatible for reportlab image rendering
+    row = []
+
+    for index, qr in enumerate(qr_data):
+        # Create a QR code with the dynamic URL
+        dynamic_url = f"{base_url}{qr['userId']}"
+        qr_code = qrcode.make(dynamic_url)
+
+        # Convert the QR code to an image
         qr_code_buffer = BytesIO()
         qr_code.save(qr_code_buffer, format='PNG')
         qr_code_buffer.seek(0)
         qr_code_base64 = base64.b64encode(qr_code_buffer.read()).decode('utf-8')
 
-        qr_image = Image(BytesIO(base64.b64decode(qr_code_base64)), width=150, height=150)
-        qr_image.hAlign = 'CENTER'  # Center the QR code image
+        qr_image = Image(BytesIO(base64.b64decode(qr_code_base64)), width=100, height=100)
+        qr_image.hAlign = 'CENTER'
 
-        # Add a row to the table for each user
-        row = [Paragraph(user_id, body_style), qr_image]
+        # User ID below the QR code
+        user_id_paragraph = Paragraph(f"<b>{qr['userId']}</b>", styles['BodyText'])
+
+        # Combine QR code and User ID in a column
+        column = [qr_image, user_id_paragraph]
+        row.append(column)
+
+        if len(row) == 2:  # Add two columns per row
+            data.append(row)
+            row = []
+
+    if row:  # Add remaining columns if any
         data.append(row)
 
     # Create a table for the QR code and user IDs
-    table = Table(data, colWidths=[doc.width * 0.4, doc.width * 0.4], rowHeights=180)
+    table = Table(data, colWidths=[doc.width * 0.5] * 2)
     table.setStyle(TableStyle([
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 0), (-1, -1), 14),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
         ('TOPPADDING', (0, 0), (-1, -1), 12),
     ]))
 
     elements.append(table)
-
-    # Add a final spacer for the bottom of the page
-    elements.append(Spacer(1, 40))
-
     doc.build(elements)
 
     pdf = buffer.getvalue()
     buffer.close()
     response.write(pdf)
     return response
+
 
 
 def register_user(request):
