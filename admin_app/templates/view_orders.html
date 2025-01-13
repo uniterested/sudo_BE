@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}View Orders - Sudo Admin Panel{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-4">View Orders</h1>
+    {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+    {% elif orders %}
+    <div class="table-responsive">
+        <table class="table table-striped mt-4">
+            <thead class="table-dark">
+                <tr class="bg-dark">
+                    <th>#</th>
+                    <th>Full Name</th>
+                    <th>Mobile</th>
+                    <th>Item</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                    <th>User Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in orders %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ entry.order.fullName }}</td>
+                        <td>{{ entry.order.mobile }}</td>
+                        <td>{{ entry.order.selectedItem }}</td>
+                        <td>{{ entry.order.quantity }}</td>
+                        <td>{{ entry.order.totalPrice }}</td>
+                        <td>{{ entry.order.status }}</td>
+                        <td>
+                            <strong>Name:</strong> {{ entry.user.firstname }} {{ entry.user.lastName }}<br>
+                            <strong>Email:</strong> {{ entry.user.emailAddress }}<br>
+                            <strong>Mobile:</strong> {{ entry.user.mobileNumber }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <div class="alert alert-info">No orders found.</div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -56,13 +56,31 @@ def admin_login(request):
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
-        if email == 'w@w.com' and password == '123456':
-            request.session['admin'] = True
-            return redirect('dashboard')
-        else:
-            messages.error(request, 'Invalid credentials')
-    return render(request, 'login.html')
+        
+        # Fetch user data from Firebase
+        db = firestore.client()
+        user_ref = db.collection('users').where('emailAddress', '==', email).stream()
 
+        user_found = False
+        for user in user_ref:
+            user_data = user.to_dict()
+            user_found = True
+            if user_data.get('role') != 1:
+                # Role is not 1, show an access message
+                messages.error(request, "You don't have access to login.")
+                break
+            elif user_data.get('emailAddress') == email and password == '123456':  # Assuming a static password
+                # Role is 1, user is allowed to login
+                request.session['admin'] = True
+                return redirect('dashboard')
+            else:
+                messages.error(request, 'Invalid email or password.')
+                break
+        
+        if not user_found:
+            messages.error(request, 'No user found with this email.')
+    
+    return render(request, 'login.html')
 
 def admin_logout(request):
     request.session.flush()
@@ -332,3 +350,33 @@ def send_notification(request, user_id):
 
     return render(request, 'send_notification.html', {'user_data': user_data, 'messages': messages})
 
+
+def view_orders(request):
+    try:
+        # Fetch orders from the 'orders' collection
+        orders_ref = db.collection('orders')
+        orders = orders_ref.stream()
+
+        orders_data = []
+        for order in orders:
+            order_dict = order.to_dict()
+            user_id = order_dict.get('userId')
+            
+            # Fetch user details from the 'users' collection
+            user_ref = db.collection('users').document(user_id)
+            user_doc = user_ref.get()
+            user_data = user_doc.to_dict() if user_doc.exists else {}
+
+            # Combine order and user data
+            orders_data.append({
+                'order': order_dict,
+                'user': user_data,
+            })
+
+        context = {
+            'orders': orders_data,
+        }
+        return render(request, 'view_orders.html', context)
+
+    except Exception as e:
+        return render(request, 'view_orders.html', {'error': str(e)})

@@ -8,6 +8,7 @@ urlpatterns = [
     path('download-qr-pdf/', views.download_qr_pdf, name='download_qr_pdf'),
     path('register-user/', views.register_user, name='register_user'),
     path('manage-users/', views.manage_users, name='manage_users'),
+    path('view-orders/', views.view_orders, name='view_orders'),
     path('logout/', views.admin_logout, name='logout'),
     path('send-notification/<str:user_id>/', views.send_notification, name='send_notification'),
 ]
