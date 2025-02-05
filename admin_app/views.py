@@ -9,6 +9,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
+from django.http import JsonResponse
 import base64
 import datetime
 import pytz
@@ -351,6 +352,18 @@ def send_notification(request, user_id):
     return render(request, 'send_notification.html', {'user_data': user_data, 'messages': messages})
 
 
+# Define status mapping
+STATUS_MAPPING = {
+    0: "Pending",
+    1: "Processing",
+    2: "Shipped",
+    3: "Delivered",
+    4: "Cancelled",
+    5: "Returned",
+    6: "Failed",
+    7: "On Hold",
+}
+
 def view_orders(request):
     try:
         # Fetch orders from the 'orders' collection
@@ -367,6 +380,10 @@ def view_orders(request):
             user_doc = user_ref.get()
             user_data = user_doc.to_dict() if user_doc.exists else {}
 
+            # Map order status to its corresponding text
+            order_status = order_dict.get('order_status', 0)
+            order_dict['status_text'] = STATUS_MAPPING.get(order_status, "Unknown")
+
             # Combine order and user data
             orders_data.append({
                 'order': order_dict,
@@ -380,3 +397,19 @@ def view_orders(request):
 
     except Exception as e:
         return render(request, 'view_orders.html', {'error': str(e)})
+
+def update_order_status(request):
+    if request.method == 'POST':
+        try:
+            order_id = request.POST.get('orderId')
+            new_status = int(request.POST.get('newStatus'))
+
+            # Update the order status in the database
+            order_ref = db.collection('orders').document(order_id)
+            order_ref.update({'order_status': new_status})
+
+            return JsonResponse({'success': True, 'status_text': STATUS_MAPPING.get(new_status, "Unknown")})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+

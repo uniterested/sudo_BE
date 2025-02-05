@@ -13,29 +13,43 @@
             <thead class="table-dark">
                 <tr class="bg-dark">
                     <th>#</th>
-                    <th>Full Name</th>
+                    <th>Order ID</th>
+                    <th>Name</th>
                     <th>Mobile</th>
                     <th>Item</th>
                     <th>Quantity</th>
                     <th>Price</th>
-                    <th>Status</th>
                     <th>User Details</th>
+                    <th>Status</th>
                 </tr>
             </thead>
             <tbody>
                 {% for entry in orders %}
                     <tr>
                         <td>{{ forloop.counter }}</td>
+                        <td>{{ entry.order.orderId }}</td>
                         <td>{{ entry.order.fullName }}</td>
                         <td>{{ entry.order.mobile }}</td>
                         <td>{{ entry.order.selectedItem }}</td>
                         <td>{{ entry.order.quantity }}</td>
-                        <td>{{ entry.order.totalPrice }}</td>
-                        <td>{{ entry.order.status }}</td>
+                        <!-- Price formatted to integer -->
+                        <td>{{ entry.order.totalPrice|floatformat:0 }}</td>
                         <td>
                             <strong>Name:</strong> {{ entry.user.firstname }} {{ entry.user.lastName }}<br>
                             <strong>Email:</strong> {{ entry.user.emailAddress }}<br>
                             <strong>Mobile:</strong> {{ entry.user.mobileNumber }}
+                        </td>
+                        <td>
+                            <select class="form-select status-dropdown" data-order-id="{{ entry.order.orderId }}" style="width: 100%; max-width: 200px;">
+                                <option value="0" {% if entry.order.order_status == 0 %}selected{% endif %}>Pending</option>
+                                <option value="1" {% if entry.order.order_status == 1 %}selected{% endif %}>Processing</option>
+                                <option value="2" {% if entry.order.order_status == 2 %}selected{% endif %}>Shipped</option>
+                                <option value="3" {% if entry.order.order_status == 3 %}selected{% endif %}>Delivered</option>
+                                <option value="4" {% if entry.order.order_status == 4 %}selected{% endif %}>Cancelled</option>
+                                <option value="5" {% if entry.order.order_status == 5 %}selected{% endif %}>Returned</option>
+                                <option value="6" {% if entry.order.order_status == 6 %}selected{% endif %}>Failed</option>
+                                <option value="7" {% if entry.order.order_status == 7 %}selected{% endif %}>On Hold</option>
+                            </select>
                         </td>
                     </tr>
                 {% endfor %}
@@ -46,4 +60,37 @@
         <div class="alert alert-info">No orders found.</div>
     {% endif %}
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const statusDropdowns = document.querySelectorAll('.status-dropdown');
+        
+        statusDropdowns.forEach(dropdown => {
+            dropdown.addEventListener('change', function() {
+                const orderId = this.getAttribute('data-order-id');
+                const newStatus = this.value;
+
+                fetch('/update_order_status/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: `orderId=${orderId}&newStatus=${newStatus}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Status updated successfully!');
+                    } else {
+                        alert('Failed to update status: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+        });
+    });
+</script>
 {% endblock %}
